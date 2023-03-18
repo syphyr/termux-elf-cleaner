@@ -53,6 +53,7 @@ uint8_t supported_dt_flags_1 = (DF_1_NOW | DF_1_GLOBAL);
 int api_level = 21;
 
 bool dry_run = false;
+bool preinit_array = false;
 bool quiet = false;
 
 static char const *const usage_message[] =
@@ -65,6 +66,7 @@ Options:\n\
 \n\
 --api-level NN        choose target api level, i.e. 21, 24, ..\n\
 --dry-run             print info but but do not remove entries\n\
+--preinit-array       strip DT_PREINIT_ARRAY header\n\
 --quiet               do not print info about removed entries\n\
 --help                display this help and exit\n\
 --version             output version information and exit\n"
@@ -160,7 +162,7 @@ bool process_elf(uint8_t* bytes, size_t elf_file_size, char const* file_name)
 					case DT_AARCH64_BTI_PLT: if (is_aarch64 && api_level < 31) removed_name = "DT_AARCH64_BTI_PLT"; break;
 					case DT_AARCH64_PAC_PLT: if (is_aarch64 && api_level < 31) removed_name = "DT_AARCH64_PAC_PLT"; break;
 					case DT_AARCH64_VARIANT_PCS: if (is_aarch64 && api_level < 31) removed_name = "DT_AARCH64_VARIANT_PCS"; break;
-					case DT_PREINIT_ARRAY: if (is_dyn) removed_name = "DT_PREINIT_ARRAY"; break;
+					case DT_PREINIT_ARRAY: if (is_dyn && preinit_array) removed_name = "DT_PREINIT_ARRAY"; break;
 				}
 				if (removed_name != nullptr) {
 					if (!quiet)
@@ -333,6 +335,9 @@ int main(int argc, char **argv)
 
 	if (argmatch(argv, argc, "-dry-run", "--dry-run", 3, NULL, &skip_args))
 		dry_run = true;
+
+	if (argmatch(argv, argc, "-preinit-array", "--preinit-array", 3, NULL, &skip_args))
+		preinit_array = true;
 
 	if (argmatch(argv, argc, "-quiet", "--quiet", 3, NULL, &skip_args))
 		quiet = true;
