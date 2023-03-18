@@ -50,6 +50,7 @@ uint8_t supported_dt_flags_1 = (DF_1_NOW | DF_1_GLOBAL);
 int api_level = 21;
 
 int dry_run = 0;
+int preinit_array = 0;
 int quiet = 0;
 
 static char const *const usage_message[] =
@@ -63,6 +64,7 @@ Options:\n\
 --api-level NN        choose target api level, i.e. 21, 24, ..\n\
 --jobs N              run parallel on n thread(s).\n\
 --dry-run             print info but but do not remove entries\n\
+--preinit-array       strip DT_PREINIT_ARRAY header\n\
 --quiet               do not print info about removed entries\n\
 --help                display this help and exit\n\
 --version             output version information and exit\n"
@@ -158,7 +160,7 @@ bool process_elf(uint8_t* bytes, size_t elf_file_size, char const* file_name)
 					case DT_AARCH64_BTI_PLT: if (is_aarch64 && api_level < 31) removed_name = "DT_AARCH64_BTI_PLT"; break;
 					case DT_AARCH64_PAC_PLT: if (is_aarch64 && api_level < 31) removed_name = "DT_AARCH64_PAC_PLT"; break;
 					case DT_AARCH64_VARIANT_PCS: if (is_aarch64 && api_level < 31) removed_name = "DT_AARCH64_VARIANT_PCS"; break;
-					case DT_PREINIT_ARRAY: if (is_dyn) removed_name = "DT_PREINIT_ARRAY"; break;
+					case DT_PREINIT_ARRAY: if (is_dyn && preinit_array) removed_name = "DT_PREINIT_ARRAY"; break;
 				}
 				if (removed_name != nullptr) {
 					if (!quiet)
@@ -320,6 +322,7 @@ int main(int argc, char **argv)
 
 	static struct option options[] = {
 		{"api-level", required_argument, NULL, 'a'},
+		{"preinit-array", no_argument, &preinit_array, 1},
 		{"dry-run", no_argument, &dry_run, 1},
 		{"jobs", required_argument, NULL, 'j'},
 		{"quiet", no_argument, &quiet, 1},
