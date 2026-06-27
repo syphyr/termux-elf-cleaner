@@ -35,7 +35,8 @@ along with termux-elf-cleaner.  If not, see
 
 #include <algorithm>
 #include <future>
-#include <semaphore>
+#include <mutex>
+#include <condition_variable>
 #include <thread>
 #include <vector>
 
@@ -44,6 +45,25 @@ along with termux-elf-cleaner.  If not, see
 
 /* Taken from emacs */
 #define ARRAYELTS(arr) (sizeof (arr) / sizeof (arr)[0])
+
+class Semaphore {
+private:
+    std::mutex mtx;
+    std::condition_variable cv;
+    int count;
+public:
+    explicit Semaphore(int count_ = 0) : count(count_) {}
+    void release() {
+        std::unique_lock<std::mutex> lock(mtx);
+        count++;
+        cv.notify_one();
+    }
+    void acquire() {
+        std::unique_lock<std::mutex> lock(mtx);
+        cv.wait(lock, [this]() { return count > 0; });
+        count--;
+    }
+};
 
 /* Default to api level 21 unless arg --api-level given  */
 uint8_t supported_dt_flags_1 = (DF_1_NOW | DF_1_GLOBAL);
@@ -385,7 +405,7 @@ int main(int argc, char **argv)
 	}
 
 	std::vector<std::future<void>> futures;
-	std::counting_semaphore sem(threads_count);
+	Semaphore sem(threads_count);
 
 	for (int i = optind; i < argc; i++) {
 		sem.acquire();
